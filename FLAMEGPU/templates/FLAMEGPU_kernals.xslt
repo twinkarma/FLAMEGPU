@@ -1056,14 +1056,14 @@ __device__ unsigned int message_<xsl:value-of select="xmml:name"/>_hash(int3 gri
  * Idea is check the current cell index to see if we can simply get a message from the current cell
  * If we are at the end of the current cell then loop till we find the next cell with messages (this way we ignore cells with no messages)
  * @param messages the message list
- * @param partition_matrix the PBM
+ * @param partition_matrix_<xsl:value-of select="../../../xmml:name"/> the PBM
  * @param relative_cell the relative partition cell position from the agent position
  * @param cell_index_max the maximum index of the current partition cell
  * @param agent_grid_cell the agents partition cell position
  * @param cell_index the current cell index in agent_grid_cell+relative_cell
  * @return true if a message has been loaded into sm false otherwise
  */
-__device__ int load_next_<xsl:value-of select="xmml:name"/>_message(xmachine_message_<xsl:value-of select="xmml:name"/>_list* messages, xmachine_message_<xsl:value-of select="xmml:name"/>_PBM* partition_matrix, int3 relative_cell, int cell_index_max, int3 agent_grid_cell, int cell_index)
+__device__ int load_next_<xsl:value-of select="xmml:name"/>_message(xmachine_message_<xsl:value-of select="xmml:name"/>_list* messages, xmachine_message_<xsl:value-of select="xmml:name"/>_PBM* partition_matrix_<xsl:value-of select="../../../xmml:name"/>, int3 relative_cell, int cell_index_max, int3 agent_grid_cell, int cell_index)
 {
 	extern __shared__ int sm_data [];
 	char* message_share = (char*)&amp;sm_data[0];
@@ -1133,7 +1133,7 @@ __device__ int load_next_<xsl:value-of select="xmml:name"/>_message(xmachine_mes
 /*
  * get first spatial partitioned <xsl:value-of select="xmml:name"/> message (first batch load into shared memory)
  */
-__device__ xmachine_message_<xsl:value-of select="xmml:name"/>* get_first_<xsl:value-of select="xmml:name"/>_message(xmachine_message_<xsl:value-of select="xmml:name"/>_list* messages, xmachine_message_<xsl:value-of select="xmml:name"/>_PBM* partition_matrix, float x, float y, float z){
+__device__ xmachine_message_<xsl:value-of select="xmml:name"/>* get_first_<xsl:value-of select="xmml:name"/>_message(xmachine_message_<xsl:value-of select="xmml:name"/>_list* messages, xmachine_message_<xsl:value-of select="xmml:name"/>_PBM* partition_matrix_<xsl:value-of select="../../../xmml:name"/>, float x, float y, float z){
 
 	extern __shared__ int sm_data [];
 	char* message_share = (char*)&amp;sm_data[0];
@@ -1144,7 +1144,7 @@ __device__ xmachine_message_<xsl:value-of select="xmml:name"/>* get_first_<xsl:v
 	float3 position = make_float3(x, y, z);
 	int3 agent_grid_cell = message_<xsl:value-of select="xmml:name"/>_grid_position(position);
 	
-	if (load_next_<xsl:value-of select="xmml:name"/>_message(messages, partition_matrix, relative_cell, cell_index_max, agent_grid_cell, cell_index))
+	if (load_next_<xsl:value-of select="xmml:name"/>_message(messages, partition_matrix_<xsl:value-of select="../../../xmml:name"/>, relative_cell, cell_index_max, agent_grid_cell, cell_index))
 	{
 		int message_index = SHARE_INDEX(threadIdx.y*blockDim.x+threadIdx.x, sizeof(xmachine_message_<xsl:value-of select="xmml:name"/>));
 		return ((xmachine_message_<xsl:value-of select="xmml:name"/>*)&amp;message_share[message_index]);
@@ -1158,14 +1158,14 @@ __device__ xmachine_message_<xsl:value-of select="xmml:name"/>* get_first_<xsl:v
 /*
  * get next spatial partitioned <xsl:value-of select="xmml:name"/> message (either from SM or next batch load)
  */
-__device__ xmachine_message_<xsl:value-of select="xmml:name"/>* get_next_<xsl:value-of select="xmml:name"/>_message(xmachine_message_<xsl:value-of select="xmml:name"/>* message, xmachine_message_<xsl:value-of select="xmml:name"/>_list* messages, xmachine_message_<xsl:value-of select="xmml:name"/>_PBM* partition_matrix){
+__device__ xmachine_message_<xsl:value-of select="xmml:name"/>* get_next_<xsl:value-of select="xmml:name"/>_message(xmachine_message_<xsl:value-of select="xmml:name"/>* message, xmachine_message_<xsl:value-of select="xmml:name"/>_list* messages, xmachine_message_<xsl:value-of select="xmml:name"/>_PBM* partition_matrix_<xsl:value-of select="../../../xmml:name"/>){
 	
 	extern __shared__ int sm_data [];
 	char* message_share = (char*)&amp;sm_data[0];
 	
 	//TODO: check message count
 	
-	if (load_next_<xsl:value-of select="xmml:name"/>_message(messages, partition_matrix, message->_relative_cell, message->_cell_index_max, message->_agent_grid_cell, message->_cell_index))
+	if (load_next_<xsl:value-of select="xmml:name"/>_message(messages, partition_matrix_<xsl:value-of select="../../../xmml:name"/>, message->_relative_cell, message->_cell_index_max, message->_agent_grid_cell, message->_cell_index))
 	{
 		//get conflict free address of 
 		int message_index = SHARE_INDEX(threadIdx.y*blockDim.x+threadIdx.x, sizeof(xmachine_message_<xsl:value-of select="xmml:name"/>));
@@ -1190,7 +1190,7 @@ __device__ xmachine_message_<xsl:value-of select="xmml:name"/>* get_next_<xsl:va
  *
  */
 __global__ void GPUFLAME_<xsl:value-of select="xmml:name"/>(xmachine_memory_<xsl:value-of select="../../xmml:name"/>_list* agents<xsl:if test="xmml:xagentOutputs/gpu:xagentOutput">, xmachine_memory_<xsl:value-of select="xmml:xagentOutputs/gpu:xagentOutput/xmml:xagentName"/>_list* <xsl:value-of select="xmml:xagentOutputs/gpu:xagentOutput/xmml:xagentName"/>_agents</xsl:if>
-	<xsl:if test="xmml:inputs/gpu:input"><xsl:variable name="messagename" select="xmml:inputs/gpu:input/xmml:messageName"/>, xmachine_message_<xsl:value-of select="xmml:inputs/gpu:input/xmml:messageName"/>_list* <xsl:value-of select="xmml:inputs/gpu:input/xmml:messageName"/>_messages<xsl:for-each select="../../../../xmml:messages/gpu:message[xmml:name=$messagename]"><xsl:if test="gpu:partitioningSpatial">, xmachine_message_<xsl:value-of select="xmml:name"/>_PBM* partition_matrix</xsl:if></xsl:for-each></xsl:if>
+	<xsl:if test="xmml:inputs/gpu:input"><xsl:variable name="messagename" select="xmml:inputs/gpu:input/xmml:messageName"/>, xmachine_message_<xsl:value-of select="xmml:inputs/gpu:input/xmml:messageName"/>_list* <xsl:value-of select="xmml:inputs/gpu:input/xmml:messageName"/>_messages<xsl:for-each select="../../../../xmml:messages/gpu:message[xmml:name=$messagename]"><xsl:if test="gpu:partitioningSpatial">, xmachine_message_<xsl:value-of select="xmml:name"/>_PBM* partition_matrix_<xsl:value-of select="../../../xmml:name"/></xsl:if></xsl:for-each></xsl:if>
 	<xsl:if test="xmml:outputs/gpu:output">, xmachine_message_<xsl:value-of select="xmml:outputs/gpu:output/xmml:messageName"/>_list* <xsl:value-of select="xmml:outputs/gpu:output/xmml:messageName"/>_messages</xsl:if>
 	<xsl:if test="gpu:RNG='true'">, RNG_rand48* rand48</xsl:if>){
 	
@@ -1224,7 +1224,7 @@ __global__ void GPUFLAME_<xsl:value-of select="xmml:name"/>(xmachine_memory_<xsl
 
 	//FLAME function call
 	<xsl:if test="../../gpu:type='continuous'">int dead = !</xsl:if><xsl:value-of select="xmml:name"/>(&amp;agent<xsl:if test="xmml:xagentOutputs/gpu:xagentOutput">, <xsl:value-of select="xmml:xagentOutputs/gpu:xagentOutput/xmml:xagentName"/>_agents</xsl:if>
-	<xsl:if test="xmml:inputs/gpu:input"><xsl:variable name="messagename" select="xmml:inputs/gpu:input/xmml:messageName"/>, <xsl:value-of select="xmml:inputs/gpu:input/xmml:messageName"/>_messages<xsl:for-each select="../../../../xmml:messages/gpu:message[xmml:name=$messagename]"><xsl:if test="gpu:partitioningSpatial">, partition_matrix</xsl:if></xsl:for-each></xsl:if>
+	<xsl:if test="xmml:inputs/gpu:input"><xsl:variable name="messagename" select="xmml:inputs/gpu:input/xmml:messageName"/>, <xsl:value-of select="xmml:inputs/gpu:input/xmml:messageName"/>_messages<xsl:for-each select="../../../../xmml:messages/gpu:message[xmml:name=$messagename]"><xsl:if test="gpu:partitioningSpatial">, partition_matrix_<xsl:value-of select="../../../xmml:name"/></xsl:if></xsl:for-each></xsl:if>
 	<xsl:if test="xmml:outputs/gpu:output">, <xsl:value-of select="xmml:outputs/gpu:output/xmml:messageName"/>_messages	</xsl:if>
 	<xsl:if test="gpu:RNG='true'">, rand48</xsl:if>);
 	
