@@ -45,12 +45,12 @@ __FLAME_GPU_FUNC__ int <xsl:value-of select="xmml:name"/>(xmachine_memory_<xsl:v
     <xsl:if test="xmml:inputs/gpu:input">
     /* //Template for input message itteration
      * <xsl:variable name="messagename" select="xmml:inputs/gpu:input/xmml:messageName"/>
-     * xmachine_message_<xsl:value-of select="xmml:inputs/gpu:input/xmml:messageName"/>* current_message = get_first_<xsl:value-of select="$messagename"/>_message(<xsl:value-of select="$messagename"/>_messages<xsl:if test="gpu:partitioningSpatial">, partition_matrix</xsl:if>);
+     * xmachine_message_<xsl:value-of select="xmml:inputs/gpu:input/xmml:messageName"/>* current_message = get_first_<xsl:value-of select="$messagename"/>_message(<xsl:value-of select="$messagename"/>_messages<xsl:if test="gpu:partitioningSpatial">, partition_matrix_<xsl:value-of select="../../xmml:name"/></xsl:if>);
      * while (current_message)
      * {
      *     //INSERT MESSAGE PROCESSING CODE HERE
      *     
-     *     current_message = get_next_<xsl:value-of select="$messagename"/>_message(current_message, <xsl:value-of select="$messagename"/>_messages<xsl:if test="gpu:partitioningSpatial">, partition_matrix</xsl:if>);
+     *     current_message = get_next_<xsl:value-of select="$messagename"/>_message(current_message, <xsl:value-of select="$messagename"/>_messages<xsl:if test="gpu:partitioningSpatial">, partition_matrix_<xsl:value-of select="../../xmml:name"/></xsl:if>);
      * }
      */
      
