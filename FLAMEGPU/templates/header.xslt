@@ -489,19 +489,7 @@ glm::vec3 getMaximumBounds();
  */
 glm::vec3 getMinimumBounds();
     
-    
-#ifdef VISUALISATION
-/** initVisualisation
- * Prototype for method which initialises the visualisation. Must be implemented in separate file
- * @param argc	the argument count from the main function used with GLUT
- * @param argv	the argument values from the main function used with GLUT
- */
-extern void initVisualisation();
 
-extern void runVisualisation();
-
-
-#endif
 
 #endif //__HEADER
 
