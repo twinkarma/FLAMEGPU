@@ -38,6 +38,13 @@
 #include &lt;thrust/sort.h&gt;
 #include &lt;thrust/system/cuda/execution_policy.h&gt;
 
+
+
+/* global constant variables */
+<xsl:for-each select="gpu:xmodel/gpu:environment/gpu:constants/gpu:variable">
+	__constant__ <xsl:value-of select="xmml:type"/><xsl:text> </xsl:text><xsl:value-of select="xmml:name"/><xsl:if test="xmml:arrayLength">[<xsl:value-of select="xmml:arrayLength"/>]</xsl:if>;
+</xsl:for-each>
+
 // include FLAME kernels
 #include "FLAMEGPU_kernals.cu"
 <!--Compile time error if partitioning radius is not a factor of the partitioning dimensions as this causes partitioning to execute incorrectly-->
