@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:xmml="http://www.dcs.shef.ac.uk/~paul/XMML"
                 xmlns:gpu="http://www.dcs.shef.ac.uk/~paul/XMMLGPU">
 <xsl:output method="text" version="1.0" encoding="UTF-8" indent="yes" />
@@ -27,7 +27,7 @@
 #include &lt;string.h&gt;
 #include &lt;cmath&gt;
 #include &lt;limits.h&gt;
-	
+
 
 // include header
 #include "header.h"
@@ -46,9 +46,9 @@ void readIntArrayInput(char* buffer, int *array, unsigned int expected_items){
             printf("Error: Agent memory array has too many items, expected %d!\n", expected_items);
             exit(EXIT_FAILURE);
         }
-        
+
         array[i++] = atoi(token);
-        
+
         token = strtok(NULL, s);
     }
     if (i != expected_items){
@@ -68,9 +68,9 @@ void readFloatArrayInput(char* buffer, float *array, unsigned int expected_items
             printf("Error: Agent memory array has too many items, expected %d!\n", expected_items);
             exit(EXIT_FAILURE);
         }
-        
+
         array[i++] = (float)atof(token);
-        
+
         token = strtok(NULL, s);
     }
     if (i != expected_items){
@@ -82,16 +82,16 @@ void readFloatArrayInput(char* buffer, float *array, unsigned int expected_items
 void saveIterationData(char* outputpath, int iteration_number, <xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent/xmml:states/gpu:state">xmachine_memory_<xsl:value-of select="../../xmml:name"/>_list* h_<xsl:value-of select="../../xmml:name"/>s_<xsl:value-of select="xmml:name"/>, xmachine_memory_<xsl:value-of select="../../xmml:name"/>_list* d_<xsl:value-of select="../../xmml:name"/>s_<xsl:value-of select="xmml:name"/>, int h_xmachine_memory_<xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>_count<xsl:if test="position()!=last()">,</xsl:if></xsl:for-each>)
 {
 	cudaError_t cudaStatus;
-	
+
 	//Device to host memory transfer
 	<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent/xmml:states/gpu:state">
 	cudaStatus = cudaMemcpy( h_<xsl:value-of select="../../xmml:name"/>s_<xsl:value-of select="xmml:name"/>, d_<xsl:value-of select="../../xmml:name"/>s_<xsl:value-of select="xmml:name"/>, sizeof(xmachine_memory_<xsl:value-of select="../../xmml:name"/>_list), cudaMemcpyDeviceToHost);
-	if (cudaStatus != cudaSuccess) 
+	if (cudaStatus != cudaSuccess)
 	{
 		fprintf(stderr,"Error Copying <xsl:value-of select="../../xmml:name"/> Agent <xsl:value-of select="xmml:name"/> State Memory from GPU: %s\n", cudaGetErrorString(cudaStatus));
 		exit(cudaStatus);
 	}</xsl:for-each>
-	
+
 	/* Pointer to file */
 	FILE *file;
 	char data[100];
@@ -123,14 +123,20 @@ void saveIterationData(char* outputpath, int iteration_number, <xsl:for-each sel
 		fputs("&lt;/xagent&gt;\n", file);
 	}
 	</xsl:for-each>
-	
+
 
 	fputs("&lt;/states&gt;\n" , file);
-	
+
 	/* Close the file */
 	fclose(file);
 }
-
+<xsl:if test="gpu:xmodel/gpu:environment/gpu:constants/gpu:variable/xmml:defaultValue">
+void initEnvVars()
+{<xsl:for-each select="gpu:xmodel/gpu:environment/gpu:constants/gpu:variable">
+<xsl:if test="xmml:defaultValue"><!--We cast the variable, so we don't accidentally create 1f or similiar if user omits decimal--><xsl:text>
+    </xsl:text><xsl:value-of select="xmml:type"/> t_<xsl:value-of select="xmml:name"/> = (<xsl:value-of select="xmml:type"/>)<xsl:value-of select="xmml:defaultValue"/>;
+    set_<xsl:value-of select="xmml:name"/>(&amp;t_<xsl:value-of select="xmml:name"/>);</xsl:if></xsl:for-each>
+}</xsl:if>
 void readInitialStates(char* inputpath, <xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent">xmachine_memory_<xsl:value-of select="xmml:name"/>_list* h_<xsl:value-of select="xmml:name"/>s, int* h_xmachine_memory_<xsl:value-of select="xmml:name"/>_count<xsl:if test="position()!=last()">,</xsl:if></xsl:for-each>)
 {
 
@@ -148,24 +154,33 @@ void readInitialStates(char* inputpath, <xsl:for-each select="gpu:xmodel/xmml:xa
 	/*xmachine * current_xmachine;*/
 	/* Variables for checking tags */
 	int reading, i;
-	int in_tag, in_itno, in_name;<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent/xmml:memory/gpu:variable">
+	int in_tag, in_itno, in_xagent, in_name;<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent/xmml:memory/gpu:variable">
     int in_<xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>;</xsl:for-each>
 
-	/* for continuous agents: set agent count to zero */<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent"><xsl:if test="gpu:type='continuous'">	
+    /* tags for environment global variables */
+    int in_env;<xsl:for-each select="gpu:xmodel/gpu:environment/gpu:constants/gpu:variable">
+    int in_env_<xsl:value-of select="xmml:name"/>;
+    </xsl:for-each>
+
+
+	/* for continuous agents: set agent count to zero */<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent"><xsl:if test="gpu:type='continuous'">
 	*h_xmachine_memory_<xsl:value-of select="xmml:name"/>_count = 0;</xsl:if></xsl:for-each>
-	
+
 	/* Variables for initial state data */<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent/xmml:memory/gpu:variable"><xsl:choose><xsl:when test="xmml:arrayLength"><xsl:text>
     </xsl:text><xsl:value-of select="xmml:type"/><xsl:text> </xsl:text><xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>[<xsl:value-of select="xmml:arrayLength"/>];</xsl:when><xsl:otherwise><xsl:text>
 	</xsl:text><xsl:value-of select="xmml:type"/><xsl:text> </xsl:text><xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>;</xsl:otherwise></xsl:choose></xsl:for-each>
-	
-	/* Open config file to read-only */
-	if((file = fopen(inputpath, "r"))==NULL)
-	{
-		printf("Error opening initial states\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	/* Initialise variables */
+
+    /* Variables for environment variables */
+    <xsl:for-each select="gpu:xmodel/gpu:environment/gpu:constants/gpu:variable"><xsl:choose><xsl:when test="xmml:arrayLength">
+    <xsl:value-of select="xmml:type"/> env_<xsl:value-of select="xmml:name"/>[<xsl:value-of select="xmml:arrayLength"/>];
+    </xsl:when><xsl:otherwise>
+    <xsl:value-of select="xmml:type"/> env_<xsl:value-of select="xmml:name"/>;
+    </xsl:otherwise></xsl:choose></xsl:for-each>
+
+
+
+	/* Initialise variables */<xsl:if test="gpu:xmodel/gpu:environment/gpu:constants/gpu:variable/xmml:defaultValue">
+    initEnvVars();</xsl:if>
     agent_maximum.x = 0;
     agent_maximum.y = 0;
     agent_maximum.z = 0;
@@ -175,8 +190,12 @@ void readInitialStates(char* inputpath, <xsl:for-each select="gpu:xmodel/xmml:xa
 	reading = 1;
 	in_tag = 0;
 	in_itno = 0;
+    in_env = 0;
+    in_xagent = 0;
 	in_name = 0;<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent/xmml:memory/gpu:variable">
 	in_<xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/> = 0;</xsl:for-each>
+    <xsl:for-each select="gpu:xmodel/gpu:environment/gpu:constants/gpu:variable">
+    in_env_<xsl:value-of select="xmml:name"/> = 0;</xsl:for-each>
 
 	<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent">
 	//set all <xsl:value-of select="xmml:name"/> values to 0
@@ -196,30 +215,50 @@ void readInitialStates(char* inputpath, <xsl:for-each select="gpu:xmodel/xmml:xa
     }</xsl:when><xsl:otherwise><xsl:text>
     </xsl:text><xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/> = <xsl:choose><xsl:when test="xmml:defaultValue"><xsl:value-of select="xmml:defaultValue"/></xsl:when><xsl:otherwise>0</xsl:otherwise></xsl:choose>;</xsl:otherwise></xsl:choose></xsl:for-each>
 
+    /* Default variables for environment variables */
+    <xsl:for-each select="gpu:xmodel/gpu:environment/gpu:constants/gpu:variable"><xsl:choose><xsl:when test="xmml:arrayLength">
+    for (i=0;i&lt;<xsl:value-of select="xmml:arrayLength"/>;i++){
+        env_<xsl:value-of select="xmml:name"/>[i] = 0;
+    }
+    </xsl:when><xsl:otherwise>env_<xsl:value-of select="xmml:name"/> = 0;
+    </xsl:otherwise></xsl:choose>
+    </xsl:for-each>
+
+    /* Open config file to read-only */
+    /* If inputfile is empty or not found then we initialise only */
+    if(inputpath == NULL || (file = fopen(inputpath, "r"))==NULL)
+    {
+      printf("Initial states file not specifed or does not exist, parameters are initialised to default values\n");
+      return;
+    }
+
 	/* Read file until end of xml */
     i = 0;
 	while(reading==1)
 	{
 		/* Get the next char from the file */
 		c = (char)fgetc(file);
-		
+
 		/* If the end of a tag */
 		if(c == '&gt;')
 		{
 			/* Place 0 at end of buffer to make chars a string */
 			buffer[i] = 0;
-			
+
 			if(strcmp(buffer, "states") == 0) reading = 1;
 			if(strcmp(buffer, "/states") == 0) reading = 0;
 			if(strcmp(buffer, "itno") == 0) in_itno = 1;
 			if(strcmp(buffer, "/itno") == 0) in_itno = 0;
+            if(strcmp(buffer, "environment") == 0) in_env = 1;
+            if(strcmp(buffer, "/environment") == 0) in_env = 0;
 			if(strcmp(buffer, "name") == 0) in_name = 1;
 			if(strcmp(buffer, "/name") == 0) in_name = 0;
+            if(strcmp(buffer, "xagent") == 0) in_xagent = 1;
 			if(strcmp(buffer, "/xagent") == 0)
 			{
 				<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent">
 				<xsl:if test="position()!=1">else </xsl:if>if(strcmp(agentname, "<xsl:value-of select="xmml:name"/>") == 0)
-				{		
+				{
 					if (*h_xmachine_memory_<xsl:value-of select="xmml:name"/>_count > xmachine_memory_<xsl:value-of select="xmml:name"/>_MAX){
 						printf("ERROR: MAX Buffer size (%i) for agent <xsl:value-of select="xmml:name"/> exceeded whilst reading data\n", xmachine_memory_<xsl:value-of select="xmml:name"/>_MAX);
 						// Close the file and stop reading
@@ -228,7 +267,7 @@ void readInitialStates(char* inputpath, <xsl:for-each select="gpu:xmodel/xmml:xa
 					}
                     <xsl:for-each select="xmml:memory/gpu:variable"><xsl:choose><xsl:when test="xmml:arrayLength">
                     for (int k=0;k&lt;<xsl:value-of select="xmml:arrayLength"/>;k++){
-                        h_<xsl:value-of select="../../xmml:name"/>s-><xsl:value-of select="xmml:name"/>[(k*xmachine_memory_<xsl:value-of select="../../xmml:name"/>_MAX)+(*h_xmachine_memory_<xsl:value-of select="../../xmml:name"/>_count)] = <xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>[k];    
+                        h_<xsl:value-of select="../../xmml:name"/>s-><xsl:value-of select="xmml:name"/>[(k*xmachine_memory_<xsl:value-of select="../../xmml:name"/>_MAX)+(*h_xmachine_memory_<xsl:value-of select="../../xmml:name"/>_count)] = <xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>[k];
                     }</xsl:when><xsl:otherwise>
 					h_<xsl:value-of select="../../xmml:name"/>s-><xsl:value-of select="xmml:name"/>[*h_xmachine_memory_<xsl:value-of select="../../xmml:name"/>_count] = <xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>;</xsl:otherwise></xsl:choose>
                     <xsl:if test="xmml:name='x'">//Check maximum x value
@@ -255,26 +294,31 @@ void readInitialStates(char* inputpath, <xsl:for-each select="gpu:xmodel/xmml:xa
                     if(agent_minimum.z &gt; <xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>)
                         agent_minimum.z = (float)<xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>;
                     </xsl:if></xsl:for-each>
-					(*h_xmachine_memory_<xsl:value-of select="xmml:name"/>_count) ++;	
+					(*h_xmachine_memory_<xsl:value-of select="xmml:name"/>_count) ++;
 				}
 				</xsl:for-each>else
 				{
 					printf("Warning: agent name undefined - '%s'\n", agentname);
 				}
-				
 
-				
+
+
 				/* Reset xagent variables */<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent/xmml:memory/gpu:variable"><xsl:choose><xsl:when test="xmml:arrayLength">
                 for (i=0;i&lt;<xsl:value-of select="xmml:arrayLength"/>;i++){
                     <xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>[i] = <xsl:choose><xsl:when test="xmml:defaultValue"><xsl:value-of select="xmml:defaultValue"/></xsl:when><xsl:otherwise>0</xsl:otherwise></xsl:choose>;
                 }</xsl:when><xsl:otherwise><xsl:text>
                 </xsl:text><xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/> = <xsl:choose><xsl:when test="xmml:defaultValue"><xsl:value-of select="xmml:defaultValue"/></xsl:when><xsl:otherwise>0</xsl:otherwise></xsl:choose>;</xsl:otherwise></xsl:choose></xsl:for-each>
 
+                in_xagent = 0;
 			}
 			<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent/xmml:memory/gpu:variable">if(strcmp(buffer, "<xsl:value-of select="xmml:name"/>") == 0) in_<xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/> = 1;
 			if(strcmp(buffer, "/<xsl:value-of select="xmml:name"/>") == 0) in_<xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/> = 0;
 			</xsl:for-each>
-			
+            /* environment variables */
+            <xsl:for-each select="gpu:xmodel/gpu:environment/gpu:constants/gpu:variable">if(strcmp(buffer, "<xsl:value-of select="xmml:name"/>") == 0) in_env_<xsl:value-of select="xmml:name"/> = 1;
+            if(strcmp(buffer, "/<xsl:value-of select="xmml:name"/>") == 0) in_env_<xsl:value-of select="xmml:name"/> = 0;
+			</xsl:for-each>
+
 			/* End of tag and reset buffer */
 			in_tag = 0;
 			i = 0;
@@ -286,18 +330,31 @@ void readInitialStates(char* inputpath, <xsl:for-each select="gpu:xmodel/xmml:xa
 			buffer[i] = 0;
 			/* Flag in tag */
 			in_tag = 1;
-			
+
 			if(in_itno) *itno = atoi(buffer);
 			if(in_name) strcpy(agentname, buffer);
-			else
+			else if (in_xagent)
 			{
-				<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent/xmml:memory/gpu:variable">if(in_<xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>){ 
+				<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent/xmml:memory/gpu:variable">if(in_<xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>){
                     <xsl:choose><xsl:when test="xmml:arrayLength">read<xsl:choose><xsl:when test="xmml:type='int'">Int</xsl:when><xsl:otherwise>Float</xsl:otherwise></xsl:choose>ArrayInput(buffer, <xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>, <xsl:value-of select="xmml:arrayLength"/>);    </xsl:when>
                     <xsl:otherwise><xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/> = (<xsl:value-of select="xmml:type"/>) ato<xsl:choose><xsl:when test="xmml:type='int'">i</xsl:when><xsl:otherwise>f</xsl:otherwise></xsl:choose>(buffer);    </xsl:otherwise></xsl:choose>
                 }
 				</xsl:for-each>
 			}
-			
+            else if (in_env){
+                <xsl:for-each select="gpu:xmodel/gpu:environment/gpu:constants/gpu:variable">if(in_env_<xsl:value-of select="xmml:name"/>){<xsl:choose><xsl:when test="xmml:arrayLength">
+                    //array input
+                    read<xsl:choose><xsl:when test="xmml:type='int'">Int</xsl:when><xsl:otherwise>Float</xsl:otherwise></xsl:choose>ArrayInput(buffer, env_<xsl:value-of select="xmml:name"/>, <xsl:value-of select="xmml:arrayLength"/>);
+                    set_<xsl:value-of select="xmml:name"/>(env_<xsl:value-of select="xmml:name"/>);</xsl:when>
+                    <xsl:otherwise>
+                    //scalar value input
+                    env_<xsl:value-of select="xmml:name"/> = (<xsl:value-of select="xmml:type"/>) ato<xsl:choose><xsl:when test="xmml:type='int'">i</xsl:when><xsl:otherwise>f</xsl:otherwise></xsl:choose>(buffer);
+                    set_<xsl:value-of select="xmml:name"/>(&amp;env_<xsl:value-of select="xmml:name"/>);
+                    </xsl:otherwise></xsl:choose>
+                }
+                </xsl:for-each>
+            }
+
 			/* Reset buffer */
 			i = 0;
 		}
