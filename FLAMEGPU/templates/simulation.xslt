@@ -245,6 +245,94 @@ int reorder_messages_sm_size(int blockSize)
 	return sizeof(unsigned int)*(blockSize+1);
 }
 
+//Twin Karmakharm BEGIN CHANGE
+//added functions for setting the partitioning parameters of the messages
+<xsl:for-each select="gpu:xmodel/xmml:messages/gpu:message">
+
+	<xsl:if test="gpu:partitioningSpatial">
+
+		<!--void fgClear_<xsl:value-of select="xmml:name"/>_partitioning_params()-->
+		<!--{-->
+			<!--cudaFree(h_<xsl:value-of select="xmml:name"/>_partition_matrix.start);-->
+			<!--cudaFree(h_<xsl:value-of select="xmml:name"/>_partition_matrix.end);-->
+			<!--cudaFree(d_<xsl:value-of select="xmml:name"/>_partition_matrix);-->
+			<!--d_<xsl:value-of select="xmml:name"/>_partition_matrix = 0;-->
+
+
+			<!--int message_<xsl:value-of select="xmml:name"/>_SoA_size = sizeof(xmachine_message_<xsl:value-of select="xmml:name"/>_list);-->
+
+
+			<!--//Reset the message content-->
+			<!--free(h_<xsl:value-of select="xmml:name"/>s);-->
+			<!--h_<xsl:value-of select="xmml:name"/>s = (xmachine_message_<xsl:value-of select="xmml:name"/>_list*)malloc(message_<xsl:value-of select="xmml:name"/>_SoA_size);-->
+
+			<!--gpuErrchk(cudaMemcpy(d_<xsl:value-of select="xmml:name"/>s, h_<xsl:value-of select="xmml:name"/>s , message_<xsl:value-of select="xmml:name"/>_SoA_size, cudaMemcpyHostToDevice));-->
+			<!--gpuErrchk(cudaMemcpy(d_<xsl:value-of select="xmml:name"/>s_swap, h_<xsl:value-of select="xmml:name"/>s , message_<xsl:value-of select="xmml:name"/>_SoA_size, cudaMemcpyHostToDevice));-->
+
+			<!--gpuErrchk(cudaFree(d_xmachine_message_<xsl:value-of select="xmml:name"/>_keys));-->
+			<!--gpuErrchk(cudaFree(d_xmachine_message_<xsl:value-of select="xmml:name"/>_values));-->
+			<!--gpuErrchk(cudaMalloc((void**)&amp;d_xmachine_message_<xsl:value-of select="xmml:name"/>_keys, xmachine_message_<xsl:value-of select="xmml:name"/>_MAX*sizeof(uint)));-->
+			<!--gpuErrchk(cudaMalloc((void**)&amp;d_xmachine_message_<xsl:value-of select="xmml:name"/>_values, xmachine_message_<xsl:value-of select="xmml:name"/>_MAX*sizeof(uint)));-->
+		<!--}-->
+
+		void fgSet_<xsl:value-of select="xmml:name"/>_partitioning_params(float radius, float xmin, float xmax, float ymin, float ymax, float zmin, float zmax)
+		{
+			<!--if(d_<xsl:value-of select="xmml:name"/>_partition_matrix != 0)-->
+			<!--fgClear_<xsl:value-of select="xmml:name"/>_partitioning_params();-->
+
+
+			/* Set spatial partitioning <xsl:value-of select="xmml:name"/> message variables (min_bounds, max_bounds)*/
+			h_message_<xsl:value-of select="xmml:name"/>_radius = (float)<xsl:value-of select="gpu:partitioningSpatial/gpu:radius"/>;
+			gpuErrchk(cudaMemcpyToSymbol( d_message_<xsl:value-of select="xmml:name"/>_radius, &amp;h_message_<xsl:value-of select="xmml:name"/>_radius, sizeof(float)));
+			h_message_<xsl:value-of select="xmml:name"/>_min_bounds = glm::vec3((float)<xsl:value-of select="gpu:partitioningSpatial/gpu:xmin"/>, (float)<xsl:value-of select="gpu:partitioningSpatial/gpu:ymin"/>, (float)<xsl:value-of select="gpu:partitioningSpatial/gpu:zmin"/>);
+			gpuErrchk(cudaMemcpyToSymbol( d_message_<xsl:value-of select="xmml:name"/>_min_bounds, &amp;h_message_<xsl:value-of select="xmml:name"/>_min_bounds, sizeof(glm::vec3)));
+			h_message_<xsl:value-of select="xmml:name"/>_max_bounds = glm::vec3((float)<xsl:value-of select="gpu:partitioningSpatial/gpu:xmax"/>, (float)<xsl:value-of select="gpu:partitioningSpatial/gpu:ymax"/>, (float)<xsl:value-of select="gpu:partitioningSpatial/gpu:zmax"/>);
+			gpuErrchk(cudaMemcpyToSymbol( d_message_<xsl:value-of select="xmml:name"/>_max_bounds, &amp;h_message_<xsl:value-of select="xmml:name"/>_max_bounds, sizeof(glm::vec3)));
+			h_message_<xsl:value-of select="xmml:name"/>_partitionDim.x = (int)ceil((h_message_<xsl:value-of select="xmml:name"/>_max_bounds.x - h_message_<xsl:value-of select="xmml:name"/>_min_bounds.x)/h_message_<xsl:value-of select="xmml:name"/>_radius);
+			h_message_<xsl:value-of select="xmml:name"/>_partitionDim.y = (int)ceil((h_message_<xsl:value-of select="xmml:name"/>_max_bounds.y - h_message_<xsl:value-of select="xmml:name"/>_min_bounds.y)/h_message_<xsl:value-of select="xmml:name"/>_radius);
+			h_message_<xsl:value-of select="xmml:name"/>_partitionDim.z = (int)ceil((h_message_<xsl:value-of select="xmml:name"/>_max_bounds.z - h_message_<xsl:value-of select="xmml:name"/>_min_bounds.z)/h_message_<xsl:value-of select="xmml:name"/>_radius);
+			gpuErrchk(cudaMemcpyToSymbol( d_message_<xsl:value-of select="xmml:name"/>_partitionDim, &amp;h_message_<xsl:value-of select="xmml:name"/>_partitionDim, sizeof(glm::ivec3)));
+
+
+
+
+
+		//Set the grid size
+			xmachine_message_<xsl:value-of select="xmml:name"/>_grid_size = h_message_<xsl:value-of select="xmml:name"/>_partitionDim.x * h_message_<xsl:value-of select="xmml:name"/>_partitionDim.y * h_message_<xsl:value-of select="xmml:name"/>_partitionDim.z;
+
+
+			/* <xsl:value-of select="xmml:name"/> Partitioning allocation (GPU) */
+
+			//Allcoate the memory of for the start and end
+			gpuErrchk(cudaMalloc(&amp;d_<xsl:value-of select="xmml:name"/>_partition_matrix.start, sizeof(int) * xmachine_message_<xsl:value-of select="xmml:name"/>_grid_size));
+			gpuErrchk(cudaMalloc(&amp;d_<xsl:value-of select="xmml:name"/>_partition_matrix.end_or_count, sizeof(int) * xmachine_message_<xsl:value-of select="xmml:name"/>_grid_size));
+			//Allocate GPU counterpart of the matrix
+			gpuErrchk( cudaMalloc( (void**) &amp;d_<xsl:value-of select="xmml:name"/>_partition_matrix, sizeof(xmachine_message_<xsl:value-of select="xmml:name"/>_PBM)));
+			//Upload to GPU
+			gpuErrchk(cudaMemcpy(d_<xsl:value-of select="xmml:name"/>_partition_matrix, &amp;h_<xsl:value-of select="xmml:name"/>_partition_matrix, sizeof(xmachine_message_<xsl:value-of select="xmml:name"/>_PBM), cudaMemcpyHostToDevice));
+		}
+
+		//Setting the default partitioning parameters
+		void fgLoadDefault_<xsl:value-of select="xmml:name"/>_partitioning_params()
+		{
+			if(d_<xsl:value-of select="xmml:name"/>_partition_matrix != 0)
+			fgClear_<xsl:value-of select="xmml:name"/>_partitioning_params();
+
+			fgSet_<xsl:value-of select="xmml:name"/>_partitioning_params((float)<xsl:value-of select="gpu:partitioningSpatial/gpu:radius"/>,
+			(float)<xsl:value-of select="gpu:partitioningSpatial/gpu:xmin"/>,
+			(float)<xsl:value-of select="gpu:partitioningSpatial/gpu:xmax"/>,
+			(float)<xsl:value-of select="gpu:partitioningSpatial/gpu:ymin"/>,
+			(float)<xsl:value-of select="gpu:partitioningSpatial/gpu:ymax"/>,
+			(float)<xsl:value-of select="gpu:partitioningSpatial/gpu:zmin"/>,
+			(float)<xsl:value-of select="gpu:partitioningSpatial/gpu:zmax"/> );
+		}
+
+
+
+
+	</xsl:if>
+</xsl:for-each>
+//Twin Karmakharm END CHANGE
 
 void initialise(char * inputfile){
 

@@ -170,8 +170,10 @@ struct xmachine_message_<xsl:value-of select="xmml:name"/>_list
  */
 struct xmachine_message_<xsl:value-of select="xmml:name"/>_PBM
 {
-	int start[xmachine_message_<xsl:value-of select="xmml:name"/>_grid_size];
-	int end_or_count[xmachine_message_<xsl:value-of select="xmml:name"/>_grid_size];
+    //Twin karmakharm change - Change the start and end of pbm grid to dynamically allocated array
+    int *start;
+    int *end_or_count;
+    //Twin karmakharm change end
 };
 </xsl:if></xsl:for-each>
 
