@@ -488,6 +488,21 @@ glm::vec3 getMinimumBounds();
 void fgSet_<xsl:value-of select="xmml:name"/>_partitioning_params(float radius, float xmin, float xmax, float ymin, float ymax, float zmin, float zmax);
 </xsl:if>
 </xsl:for-each>
+
+    /**
+    * AGENTS UPLOAD AND DOWNLOAD FUNCTIONS
+    */
+<xsl:for-each select="gpu:xmodel/xmml:xagents/gpu:xagent/xmml:states/gpu:state">
+    <xsl:variable name="agentName" select="../../xmml:name"/>
+    <xsl:variable name ="agentState" select="xmml:name"/>
+
+    void fgUploadAgent_<xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>( xmachine_memory_<xsl:value-of select="$agentName"/>* agentData , int offset, int count );
+    void fgAddAgent_<xsl:value-of select="../../xmml:name"/>_<xsl:value-of select="xmml:name"/>( xmachine_memory_<xsl:value-of select="$agentName"/>* agentData ,  int count );
+    void fgDownloadAgent_<xsl:value-of select="$agentName"/>_<xsl:value-of select="$agentState"/>( xmachine_memory_<xsl:value-of select="$agentName"/>* agentDataBuffer,  int offset, int count  );
+    void fgClearAgent_<xsl:value-of select="$agentName"/>_<xsl:value-of select="$agentState"/>();
+
+    //extern void filter_<xsl:value-of select="$agentName"/>_<xsl:value-of select="$agentState"/>( xmachine_memory_<xsl:value-of select="$agentName"/>_list* agentlist, int* filterIDs, int numagents );
+</xsl:for-each>
 #endif //__HEADER
 
 </xsl:template>
