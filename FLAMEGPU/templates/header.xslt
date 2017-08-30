@@ -66,12 +66,7 @@ typedef unsigned int uint;
 </xsl:text></xsl:for-each>
 
 
-/* Spatial partitioning grid size definitions */<xsl:for-each select="gpu:xmodel/xmml:messages/gpu:message"><xsl:if test="gpu:partitioningSpatial">
-//xmachine_message_<xsl:value-of select="xmml:name"/> partition grid size (gridDim.X*gridDim.Y*gridDim.Z)<xsl:variable name="x_dim"><xsl:value-of select="ceiling ((gpu:partitioningSpatial/gpu:xmax - gpu:partitioningSpatial/gpu:xmin) div gpu:partitioningSpatial/gpu:radius)"/></xsl:variable>
-<xsl:variable name="y_dim"><xsl:value-of select="ceiling ((gpu:partitioningSpatial/gpu:ymax - gpu:partitioningSpatial/gpu:ymin) div gpu:partitioningSpatial/gpu:radius)"/></xsl:variable>
-<xsl:variable name="z_dim"><xsl:value-of select="ceiling ((gpu:partitioningSpatial/gpu:zmax - gpu:partitioningSpatial/gpu:zmin) div gpu:partitioningSpatial/gpu:radius)"/></xsl:variable>
-#define xmachine_message_<xsl:value-of select="xmml:name"/>_grid_size <xsl:value-of select="$x_dim * $y_dim * $z_dim"/>
-</xsl:if></xsl:for-each>
+
   
   
 /* enum types */
@@ -487,9 +482,12 @@ glm::vec3 getMaximumBounds();
  * @return 	a three component float indicating the minimum x, y and z positions of all agents
  */
 glm::vec3 getMinimumBounds();
-    
 
-
+<xsl:for-each select="gpu:xmodel/xmml:messages/gpu:message">
+<xsl:if test="gpu:partitioningSpatial">
+void fgSet_<xsl:value-of select="xmml:name"/>_partitioning_params(float radius, float xmin, float xmax, float ymin, float ymax, float zmin, float zmax);
+</xsl:if>
+</xsl:for-each>
 #endif //__HEADER
 
 </xsl:template>
