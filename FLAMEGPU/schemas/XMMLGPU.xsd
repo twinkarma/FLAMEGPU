@@ -44,6 +44,7 @@
 					<xs:element ref="initFunctions" maxOccurs="1" minOccurs="0" />
 					<xs:element ref="exitFunctions" maxOccurs="1" minOccurs="0" />
 					<xs:element ref="stepFunctions" maxOccurs="1" minOccurs="0" />
+					<xs:element ref="hostLayerFunctions" maxOccurs="1" minOccurs="0" />
 					<xs:element name="graphs" type="graphs_type" maxOccurs="1" minOccurs="0" />
 				</xs:sequence>
 			</xs:extension>
@@ -151,11 +152,12 @@
 	<xs:element substitutionGroup="xmml:functionFiles" name="functionFiles" type="functionFiles_type">
 	</xs:element>
 	<xs:element name="xmodel" type="xmodel_type">
-		<xs:key name="xagent_func_name_key">
-			<xs:selector xpath=".//xmml:xagents/mstns:xagent/xmml:functions/mstns:function" />
-			<xs:field xpath="xmml:name" />
+		<xs:key name="xagent_or_host_func_name_key">
+			<!-- Selector selects the xmml:name or gpu:name (mstns:name) of all hostLayerFunctions and all xagent functions to build a list of (unique) keys, used to validate the value of layer functions -->
+			<xs:selector xpath=".//xmml:xagents/mstns:xagent/xmml:functions/mstns:function|.//mstns:environment/mstns:hostLayerFunctions/mstns:hostLayerFunction" />
+			<xs:field xpath="xmml:name|mstns:name" />
 		</xs:key>
-		<xs:keyref name="layer_functions" refer="xagent_func_name_key">
+		<xs:keyref name="layer_functions" refer="xagent_or_host_func_name_key">
 			<xs:selector xpath=".//xmml:layers/xmml:layer/mstns:layerFunction" />
 			<xs:field xpath="xmml:name" />
 		</xs:keyref>
@@ -304,6 +306,20 @@
 			</xs:extension>
 		</xs:complexContent>
 	</xs:complexType>
+	<xs:element name="hostLayerFunction">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="name" type="xs:string" />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:complexType name="hostLayerFunctions_type">
+    <xs:sequence>
+      <xs:element ref="hostLayerFunction" minOccurs="1" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:element name="hostLayerFunctions" type="hostLayerFunctions_type">
+  </xs:element>
 	<xs:element substitutionGroup="xmml:layerFunction" name="layerFunction" type="layer_function_type" />
 	<xs:complexType name="globalCondition_type">
 		<xs:complexContent>
